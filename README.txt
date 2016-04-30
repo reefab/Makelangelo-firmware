@@ -8,6 +8,20 @@ Makelangelo is a polargraph mural drawing robot.  It is intended to teach studen
 
 This project specifically deals with the firmware: the code in the brain of the robot that receives instructions and moves the motors.  It pairs really well with Makelangelo, a project to give humans a pleasant GUI.
 
+## This Fork ##
+
+This version of the firmware is designed for using a [Sanguinololu](http://reprap.org/wiki/Sanguinololu) board instead of a RUMBA/AMS.
+
+Connect the two stepper motors to the X and Y controllers (left and right respectively).
+
+The Servo is using the following connections on the EXT connector:
+
+ * Ground
+ * 5V
+ * D12 PWM (actually D4 but there is an error on the PCB)
+
+![board](board.jpg)
+
 ## Instructions ##
 
 For installation instructions, see
