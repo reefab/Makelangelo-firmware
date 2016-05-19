@@ -89,6 +89,7 @@ void LCD_init() {
   digitalWrite(BTN_EN2,HIGH);
   digitalWrite(BTN_ENC,HIGH);
   current_menu=LCD_status_menu;
+  menu_position_sum=1;    /* 20160313-NM-Added so the clicking without any movement will display a menu */
 }
 
 
@@ -141,12 +142,13 @@ void LCD_update() {
       if(num_menu_items>0) {
         if( menu_position_sum > (num_menu_items-1) * LCD_TURN_PER_MENU ) menu_position_sum = (num_menu_items-1) * LCD_TURN_PER_MENU;
       }
+      if( menu_position_sum < 1)  menu_position_sum=1;  /* 20160313-NM-Added to stop the positon going negative at needing more winds to come back */
 
       menu_position = menu_position_sum / LCD_TURN_PER_MENU;
       if(op != menu_position) lcd.clear();
 
       if(menu_position>num_menu_items-1) menu_position=num_menu_items-1;
-      if(menu_position<0) menu_position=0;
+      if(menu_position<0) { menu_position=0;  }   
       if(screen_position>menu_position) screen_position=menu_position;
       if(screen_position<menu_position-(LCD_HEIGHT-1)) screen_position=menu_position-(LCD_HEIGHT-1);
       screen_end=screen_position+LCD_HEIGHT;
@@ -169,7 +171,7 @@ void LCD_status_menu() {
     lcd.setCursor(10, 0);  lcd.print('Y');  LCD_print_float(posy);
     lcd.setCursor( 0, 1);  lcd.print('Z');  LCD_print_float(posz);
     lcd.setCursor(10, 1);  lcd.print('F');  LCD_print_float(feed_rate);
-    lcd.setCursor( 0, 2);  lcd.print(F("Makelangelo.com #"));  lcd.print(robot_uid);
+    lcd.setCursor( 0, 2);  lcd.print(F("Makelangelo #"));  lcd.print(robot_uid);
     lcd.setCursor( 0, 3);  LCD_print_long(speed_adjust);  lcd.print(F("% "));
     if(sd_printing_now==true/* && sd_printing_paused==false*/) {
       LCD_print_float(sd_percent_complete);
@@ -349,3 +351,4 @@ void LCD_menu() {}
  * You should have received a copy of the GNU General Public License
  * along with DrawbotGUI.  If not, see <http://www.gnu.org/licenses/>.
  */
+ 

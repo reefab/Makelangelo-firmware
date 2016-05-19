@@ -1,4 +1,4 @@
-##### Makelangelo-firmware #####
+﻿##### Makelangelo-firmware #####
 
 http://www.makelangelo.com/
 
@@ -21,6 +21,10 @@ The Servo is using the following connections on the EXT connector:
  * D12 PWM (actually D4 but there is an error on the PCB)
 
 ![board](board.jpg)
+## Version ##
+
+This is version 1.0.3.
+Newer versions might be available at https://www.marginallyclever.com/product/makelangelo-firmware/
 
 ## Instructions ##
 

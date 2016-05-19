@@ -209,15 +209,20 @@ void recalculate_reverse2(Segment *prev,Segment *current,Segment *next) {
 
 
 void recalculate_reverse() {
+CRITICAL_SECTION_START
   int s = last_segment;
-  Segment *blocks[3] = {NULL,NULL,NULL};
+CRITICAL_SECTION_END
 
-  while(s != current_segment) {
-    s=get_prev_segment(s);
-    blocks[2]=blocks[1];
-    blocks[1]=blocks[0];
-    blocks[0]=&line_segments[s];
-    recalculate_reverse2(blocks[0],blocks[1],blocks[2]);
+  Segment *blocks[3] = {NULL,NULL,NULL};
+  int count = SEGMOD( last_segment + current_segment + MAX_SEGMENTS );
+  if(count>3) {
+    while(s != current_segment) {
+      s=get_prev_segment(s);
+      blocks[2]=blocks[1];
+      blocks[1]=blocks[0];
+      blocks[0]=&line_segments[s];
+      recalculate_reverse2(blocks[0],blocks[1],blocks[2]);
+    }
   }
 }
 
@@ -259,11 +264,11 @@ void recalculate_forward() {
 }
 
 
-int intersection_time(float acceleration,float distance,float start_speed,float end_speed) {
+int intersection_time(float accel,float distance,float start_speed,float end_speed) {
 #if 0
-  return ( ( 2.0*acceleration*distance - start_speed*start_speed + end_speed*end_speed ) / (4.0*acceleration) );
+  return ( ( 2.0*accel*distance - start_speed*start_speed + end_speed*end_speed ) / (4.0*accel) );
 #else
-  float t2 = ( start_speed - end_speed + acceleration * distance ) / ( 2.0 * acceleration );
+  float t2 = ( start_speed - end_speed + accel * distance ) / ( 2.0 * accel );
   return distance - t2;
 #endif
 }
@@ -279,7 +284,6 @@ void segment_update_trapezoid(Segment *s,float start_speed,float end_speed) {
   int steps_to_decel = floor( ( end_speed - s->feed_rate_max ) / -acceleration );
 
   int steps_at_top_speed = s->steps_total - steps_to_accel - steps_to_decel;
-
   if(steps_at_top_speed<=0) {
     steps_to_accel = ceil( intersection_time(acceleration,s->steps_total,start_speed,end_speed) );
     steps_at_top_speed=0;
@@ -368,9 +372,6 @@ void motor_set_step_count(long a0,long a1,long a2) {
     old_seg.a[0].step_count=a0;
     old_seg.a[1].step_count=a1;
     old_seg.a[2].step_count=a2;
-    laststep[0]=a0;
-    laststep[1]=a1;
-    laststep[2]=a2;
   }
 }
 
@@ -540,15 +541,21 @@ void motor_line(long n0,long n1,long n2,float new_feed_rate) {
     delay(1);
   }
 
-  // use LCD to adjust speed while drawing
-#ifdef HAS_LCD
-  new_feed_rate *= (float)speed_adjust * 0.01f;
-#endif
-
   int prev_segment = get_prev_segment(last_segment);
   Segment &new_seg = line_segments[last_segment];
   Segment &old_seg = line_segments[prev_segment];
 
+
+  // use LCD to adjust speed while drawing
+#ifdef HAS_LCD
+  new_feed_rate *= (float)speed_adjust * 0.01f;
+#endif
+/*
+  Serial.print('^');
+  Serial.print(n0);  Serial.print('\t');
+  Serial.print(n1);  Serial.print('\t');
+  Serial.print(n2);  Serial.print('\n');
+*/
   new_seg.a[0].step_count = n0;
   new_seg.a[1].step_count = n1;
   new_seg.a[2].step_count = n2;
@@ -614,9 +621,9 @@ void motor_line(long n0,long n1,long n2,float new_feed_rate) {
   // when should we accelerate and decelerate in this segment?
   segment_update_trapezoid(&new_seg,new_seg.feed_rate_start,MIN_FEEDRATE);
 
-  recalculate_acceleration();
-
   last_segment = next_segment;
+
+  recalculate_acceleration();
 }
 
 

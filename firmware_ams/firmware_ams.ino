@@ -1,5 +1,6 @@
 //------------------------------------------------------------------------------
-// Draw robot
+// Makelangelo polargraph robot firmware
+// Supports Adafruit Motor Shield v1 and v2
 // dan@marginallycelver.com 2012 feb 11
 //------------------------------------------------------------------------------
 // Copyright at end of file.  Please see
@@ -11,6 +12,12 @@
 //------------------------------------------------------------------------------
 #define MOTHERBOARD 1  // Adafruit Motor Shield 1
 //#define MOTHERBOARD 2  // Adafruit Motor Shield 2
+
+#if MOTHERBOARD == 2
+// stacked motor shields have different addresses. The default is 0x60
+// 0x70 is the "all call" address - every shield will respond as one.
+#define SHIELD_ADDRESS (0x60)
+#endif
 
 // machine style
 #define POLARGRAPH2  // uncomment this line if you use a polargraph like the Makelangelo
@@ -31,8 +38,8 @@
 #define M2_PIN          (2)
 
 // which limit switch is on which pin?
-#define L_PIN           (A3)
-#define R_PIN           (A5)
+#define L_PIN           (3)
+#define R_PIN           (5)
 
 // Marginally Clever steppers are 400 steps per turn.
 #define STEPPER_STEPS_PER_TURN    (400.0)
@@ -88,7 +95,6 @@
 #define File int
 #endif
 
-
 #if MOTHERBOARD == 1
 #define M1_STEP  m1.step
 #define M2_STEP  m2.step
@@ -102,9 +108,6 @@
 #define M2_STEP(a,b)  m2->step(a,b,MICROSTEP)
 #define M1_ONESTEP(x)  m1->onestep(x,MICROSTEP)
 #define M2_ONESTEP(x)  m2->onestep(x,MICROSTEP)
-// stacked motor shields have different addresses. The default is 0x60
-// 0x70 is the "all call" address - every shield will respond as one.
-#define SHIELD_ADDRESS (0x61)
 #endif
 
 //------------------------------------------------------------------------------
@@ -123,14 +126,14 @@
 #if MOTHERBOARD == 1
 #include <SPI.h>  // pkm fix for Arduino 1.5
 // Adafruit motor driver library
-#include <AFMotorDrawbot.h>
+#include "AFMotorDrawbot/AFMotorDrawbot.h"
 // V1 Motor Shield https://learn.adafruit.com/adafruit-motor-shield/library-install
 //#include <AFMotor.h>
 #endif
 
 #if MOTHERBOARD == 2
 #include <Wire.h>
-#include <Adafruit_MotorShield.h>
+#include "Adafruit_MotorShield/Adafruit_MotorShield.h"
 #endif
 
 // Default servo library
@@ -186,7 +189,7 @@ int M2_REEL_IN  = FORWARD;
 int M2_REEL_OUT = BACKWARD;
 
 // calculate some numbers to help us find feed_rate
-float SPOOL_DIAMETER = 1.5;
+float SPOOL_DIAMETER = 4.0f/PI;
 float THREAD_PER_STEP=0;  // thread per step
 
 // plotter position.
@@ -366,6 +369,7 @@ void FK(float l1, float l2,float &x,float &y) {
 
 
 //------------------------------------------------------------------------------
+// pause microseconds
 void pause(long us) {
   delay(us/1000);
   delayMicroseconds(us%1000);
@@ -444,8 +448,9 @@ void line(float x,float y,float z) {
 
   laststep1=l1;
   laststep2=l2;
-  posx=x;
-  posy=y;
+  // I hope this prevents rounding errors.  Small fractions of lines
+  // over a long time could lead to lost steps and drawing problems.
+  FK(l1,l2,posx,posy);
   posz=z;
 }
 
@@ -1040,7 +1045,7 @@ void processCommand() {
  */
 void ready() {
   sofar=0;  // clear input buffer
-  Serial.print(F("\n> "));  // signal ready to receive input
+  Serial.println(F("> "));  // signal ready to receive input
   last_cmd_time = millis();
 }
 
